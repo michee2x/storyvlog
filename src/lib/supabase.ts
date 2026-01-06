@@ -4,11 +4,16 @@ import { createClient } from '@supabase/supabase-js';
 
 // TODO: Replace these with your actual Supabase project credentials
 // You can find these in your Supabase Dashboard -> Project Settings -> API
-const SUPABASE_URL = 'https://tfkqpjgqvivqejnbdunp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRma3Fwamdxdml2cWVqbmJkdW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NDcyMDAsImV4cCI6MjA4MzIyMzIwMH0.xtffA4A6KyW5FUQGM1V5L_9czvEk27n_81-l2Y0fNzA';
+// Access credentials from environment variables
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.warn('Supabase credentials missing! Check your .env file.');
+}
 
 // Custom storage adapter for Expo SecureStore
-const ExoSecureStoreAdapter = {
+const ExpoSecureStoreAdapter = {
   getItem: (key: string) => {
     return SecureStore.getItemAsync(key);
   },
@@ -22,7 +27,7 @@ const ExoSecureStoreAdapter = {
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: ExoSecureStoreAdapter,
+    storage: ExpoSecureStoreAdapter,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

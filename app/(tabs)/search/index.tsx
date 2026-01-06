@@ -1,28 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchStories, Story } from '../../../src/api/stories';
+import { fetchMainCategories, Category } from '../../../src/api/categories';
 import CategoryTile from '../../../src/components/cards/CategoryTile';
 import StoryCard from '../../../src/components/cards/StoryCard';
-
-// Mock Categories with images (reusing story cover for demo)
-const CATEGORIES = [
-  { id: '1', title: 'Romance', image: require('@/assets/images/romance-cover.png') },
-  { id: '2', title: 'Action', image: require('@/assets/images/romance-cover.png') },
-  { id: '3', title: 'Fantasy', image: require('@/assets/images/romance-cover.png') },
-  { id: '4', title: 'Drama', image: require('@/assets/images/romance-cover.png') },
-  { id: '5', title: 'Thriller', image: require('@/assets/images/romance-cover.png') },
-  { id: '6', title: 'Sci-Fi', image: require('@/assets/images/romance-cover.png') },
-];
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [stories, setStories] = useState<Story[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   
   useEffect(() => {
     fetchStories().then(setStories);
+    
+    // Fetch categories from database
+    fetchMainCategories().then(data => {
+      setCategories(data);
+      setLoadingCategories(false);
+    });
   }, []);
 
   const filteredStories = stories.filter(story => 
@@ -75,15 +74,35 @@ export default function SearchScreen() {
           {/* Browse Categories Grid */}
           <View>
              <Text className="text-white font-bold text-lg mb-4">Browse Categories</Text>
-             <View className="flex-row flex-wrap -mx-1.5">
-                {CATEGORIES.map((cat) => (
-                    <View key={cat.id} className="w-1/2">
-                        <Link href={`/category/${cat.title.toLowerCase()}`} asChild>
-                             <CategoryTile title={cat.title} image={cat.image} />
-                        </Link>
-                    </View>
-                ))}
-             </View>
+             {loadingCategories ? (
+               <View className="flex-row flex-wrap -mx-1.5">
+                 {[1, 2, 3, 4, 5, 6].map((i) => (
+                   <View key={i} className="w-1/2 p-1.5">
+                     <View className="h-24 bg-dark-card rounded-xl border border-white/10">
+                       <ActivityIndicator size="small" color="#FF2D55" style={{ marginTop: 35 }} />
+                     </View>
+                   </View>
+                 ))}
+               </View>
+             ) : categories.length > 0 ? (
+               <View className="flex-row flex-wrap -mx-1.5">
+                 {categories.map((cat) => (
+                   <View key={cat.id} className="w-1/2">
+                     <Link href={`/category/${cat.slug}`} asChild>
+                       <CategoryTile 
+                         title={cat.name} 
+                         image={{ uri: cat.image_url }} 
+                       />
+                     </Link>
+                   </View>
+                 ))}
+               </View>
+             ) : (
+               <View className="items-center py-8">
+                 <Ionicons name="folder-open-outline" size={48} color="#666" />
+                 <Text className="text-gray-400 mt-3">No categories available</Text>
+               </View>
+             )}
           </View>
 
         </View>
