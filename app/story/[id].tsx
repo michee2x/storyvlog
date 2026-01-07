@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StatusBar, Text, TouchableOpacity, View, Dimensions } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchStoryDetails, Story } from '../../src/api/stories';
 import { extractColorsFromImage, ExtractedColors } from '../../src/utils/colorExtractor';
@@ -134,12 +134,12 @@ export default function StoryDetailsScreen() {
         {/* Hero Section */}
         <View className="items-center px-6 mt-6">
           {/* Cover Image with Shadow Glow */}
-          <View className="shadow-2xl shadow-black/50" style={{ 
-            shadowColor: colors.primary,
-            shadowOffset: { width: 0, height: 10 },
+          <View className="shadow-2xl shadow-black/80" style={{ 
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 12 },
             shadowOpacity: 0.5,
-            shadowRadius: 20,
-            elevation: 10
+            shadowRadius: 24,
+            elevation: 12
           }}>
             <Image 
               source={story.coverImage} 
@@ -160,17 +160,17 @@ export default function StoryDetailsScreen() {
 {/* Stats Row */}
           <View className="flex-row items-center justify-around w-full mb-8 bg-white/5 mx-6 py-4 rounded-2xl border border-white/5 px-4 backdrop-blur-md">
                <View className="items-center flex-1">
-                  <Ionicons name="eye" size={20} color={colors.accent} style={{ marginBottom: 4 }} />
+                  <Ionicons name="eye" size={20} color="#9ca3af" style={{ marginBottom: 4 }} />
                   <Text className="text-white font-bold text-base">{formatCompactNumber(story.views)}</Text>
                   <Text className="text-white/40 text-xs font-medium">Reads</Text>
                </View>
                <View className="items-center flex-1">
-                  <Ionicons name="heart" size={20} color={colors.accent} style={{ marginBottom: 4 }} />
+                  <Ionicons name="heart" size={20} color="#9ca3af" style={{ marginBottom: 4 }} />
                   <Text className="text-white font-bold text-base">{formatCompactNumber(story.likes)}</Text>
                    <Text className="text-white/40 text-xs font-medium">Likes</Text>
                </View>
                <View className="items-center flex-1">
-                  <Ionicons name="layers" size={20} color={colors.accent} style={{ marginBottom: 4 }} />
+                  <Ionicons name="layers" size={20} color="#9ca3af" style={{ marginBottom: 4 }} />
                   <Text className="text-white font-bold text-base">{story.chapters_count}</Text>
                    <Text className="text-white/40 text-xs font-medium">Parts</Text>
                </View>
@@ -209,7 +209,7 @@ export default function StoryDetailsScreen() {
                    <Ionicons 
                     name={getCategoryIcon(story.category)} 
                     size={14} 
-                    color={colors.accent} 
+                    color="white" 
                     style={{ marginRight: 6 }}
                    />
                    <Text className="text-gray-300 text-xs font-medium capitalize">{story.category}</Text>

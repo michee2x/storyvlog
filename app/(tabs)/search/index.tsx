@@ -8,19 +8,22 @@ import { fetchMainCategories, Category } from '../../../src/api/categories';
 import CategoryTile from '../../../src/components/cards/CategoryTile';
 import StoryCard from '../../../src/components/cards/StoryCard';
 
+import { SkeletonCard, SkeletonCategory } from '../../../src/components/skeletons/CardSkeletons';
+
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [stories, setStories] = useState<Story[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    fetchStories().then(setStories);
-    
-    // Fetch categories from database
-    fetchMainCategories().then(data => {
-      setCategories(data);
-      setLoadingCategories(false);
+    Promise.all([
+        fetchStories(),
+        fetchMainCategories()
+    ]).then(([fetchedStories, fetchedCategories]) => {
+        setStories(fetchedStories);
+        setCategories(fetchedCategories);
+        setLoading(false);
     });
   }, []);
 
@@ -33,7 +36,7 @@ export default function SearchScreen() {
     <SafeAreaView className="flex-1 bg-dark-bg" edges={['top']}>
       <StatusBar barStyle="light-content" />
       
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         <View className="p-6 pb-2">
           <Text className="text-3xl font-bold text-white mb-6">Search</Text>
           
@@ -46,7 +49,7 @@ export default function SearchScreen() {
               placeholderTextColor="#8E8E93"
               value={searchQuery}
               onChangeText={setSearchQuery}
-              style={{ lineHeight: 20 }} // Fix for text input height alignment
+              style={{ lineHeight: 20 }}
             />
             {searchQuery.length > 0 && (
                <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -58,31 +61,31 @@ export default function SearchScreen() {
           {/* What Everyone's Searching */}
           <View className="mb-8">
              <Text className="text-white font-bold text-lg mb-4">What Everyone's Searching</Text>
-             <FlatList
-                horizontal
-                data={stories} // Use fetched stories
-                renderItem={({ item }) => (
-                    <View className="mr-4">
-                        <StoryCard story={item} />
-                    </View>
-                )}
-                keyExtractor={item => item.id}
-                showsHorizontalScrollIndicator={false}
-             />
+             {loading ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+                </ScrollView>
+             ) : (
+                <FlatList
+                    horizontal
+                    data={stories} 
+                    renderItem={({ item }) => (
+                        <View className="mr-4">
+                            <StoryCard story={item} />
+                        </View>
+                    )}
+                    keyExtractor={item => item.id}
+                    showsHorizontalScrollIndicator={false}
+                />
+             )}
           </View>
 
           {/* Browse Categories Grid */}
           <View>
              <Text className="text-white font-bold text-lg mb-4">Browse Categories</Text>
-             {loadingCategories ? (
-               <View className="flex-row flex-wrap -mx-1.5">
-                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                   <View key={i} className="w-1/2 p-1.5">
-                     <View className="h-24 bg-dark-card rounded-xl border border-white/10">
-                       <ActivityIndicator size="small" color="#FF2D55" style={{ marginTop: 35 }} />
-                     </View>
-                   </View>
-                 ))}
+             {loading ? (
+               <View className="flex-row flex-wrap justify-between">
+                 {[1, 2, 3, 4, 5, 6].map((i) => <SkeletonCategory key={i} />)}
                </View>
              ) : categories.length > 0 ? (
                <View className="flex-row flex-wrap -mx-1.5">
