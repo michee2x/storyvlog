@@ -16,6 +16,7 @@ export interface Story {
   status?: string;
   created_at?: string;
   chapters_count?: number;
+  chapters?: any[]; // Array of chapter objects
 }
 
 const formatCount = (count: number): string => {

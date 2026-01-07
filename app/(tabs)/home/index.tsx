@@ -1,22 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View, Image } from 'react-native';
+import { FlatList, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, fetchMainCategories } from '../../../src/api/categories';
 import {
   fetchFeaturedStories,
-  fetchNewArrivals,
-  fetchTrendingStories,
   fetchStoriesByGenreSlug,
+  fetchTrendingStories,
   Story
 } from '../../../src/api/stories';
 import AdCard from '../../../src/components/ads/AdCard';
+import CategoryGridCard from '../../../src/components/cards/CategoryGridCard';
 import FeaturedStoryCard from '../../../src/components/cards/FeaturedStoryCard';
 import StoryCard from '../../../src/components/cards/StoryCard';
 import TrendingStoryCard from '../../../src/components/cards/TrendingStoryCard';
-import CategoryGridCard from '../../../src/components/cards/CategoryGridCard';
-import HomeSectionSkeleton from '../../../src/components/skeletons/HomeSectionSkeleton';
+import { SkeletonCard, SkeletonCategory, SkeletonFeatured, SkeletonTrending } from '../../../src/components/skeletons/CardSkeletons';
 import { useAuth } from '../../../src/contexts/AuthContext';
 
 export default function HomeScreen() {
@@ -96,16 +95,58 @@ export default function HomeScreen() {
     return (
       <SafeAreaView className="flex-1 bg-dark-bg" edges={['top']}>
         <StatusBar barStyle="light-content" />
-        <View className="px-6 py-4 flex-row justify-between items-center bg-dark-bg z-10">
-           <View className="w-32 h-8 bg-white/10 rounded" />
-           <View className="w-10 h-10 rounded-full bg-white/10" />
+        
+        {/* Header Skeleton */}
+        <View className="px-6 py-3 flex-row justify-between items-center bg-dark-bg z-10 border-b border-white/5">
+             <View>
+               <View className="w-32 h-6 bg-white/10 rounded mb-1" />
+               <View className="w-24 h-4 bg-white/5 rounded" />
+             </View>
+            <View className="flex-row gap-4">
+               <View className="w-10 h-10 rounded-full bg-white/10" />
+               <View className="w-10 h-10 rounded-full bg-white/10" />
+            </View>
         </View>
-        <ScrollView className="flex-1 pt-6">
-           {/* Exact Skeleton Structure to match final layout */}
-           <View className="w-full h-[300px] bg-white/5 mb-8 mx-6 rounded-3xl self-center" />
-           <HomeSectionSkeleton title={false} />
-           <HomeSectionSkeleton />
-           <HomeSectionSkeleton />
+
+        <ScrollView className="flex-1 pt-6" showsVerticalScrollIndicator={false}>
+           
+           {/* Featured Section Skeleton */}
+           <View className="mb-10 px-6">
+               <View className="w-32 h-6 bg-white/10 rounded mb-4" />
+               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                   <SkeletonFeatured />
+                   <SkeletonFeatured />
+               </ScrollView>
+           </View>
+
+           {/* Categories Skeleton */}
+           <View className="mb-10 px-6">
+              <View className="flex-row justify-between mb-4">
+                 <View className="w-32 h-6 bg-white/10 rounded" />
+                 <View className="w-8 h-6 bg-white/5 rounded" />
+              </View>
+              <View className="flex-row flex-wrap justify-between">
+                 {[1, 2, 3, 4].map(i => <SkeletonCategory key={i} />)}
+              </View>
+           </View>
+
+           {/* Trending Skeleton */}
+           <View className="mb-10">
+              <View className="flex-row justify-between mb-4 px-6">
+                 <View className="w-32 h-6 bg-white/10 rounded" />
+              </View>
+              {[1, 2, 3].map(i => <SkeletonTrending key={i} />)}
+           </View>
+
+           {/* Horizontal Lists Skeleton */}
+           <View className="mb-8">
+               <View className="flex-row justify-between mb-4 px-6">
+                 <View className="w-32 h-6 bg-white/10 rounded" />
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24 }}>
+                  {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+              </ScrollView>
+           </View>
         </ScrollView>
       </SafeAreaView>
     );
