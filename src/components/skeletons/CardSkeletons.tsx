@@ -1,4 +1,7 @@
-import { View } from 'react-native';
+import { Dimensions, View } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const FEATURED_CARD_WIDTH = width - 48; // 24px padding on each side
 
 export const SkeletonCard = () => (
   <View className="mr-5 w-44">
@@ -16,9 +19,10 @@ export const SkeletonCategory = () => (
 );
 
 export const SkeletonFeatured = () => (
-    <View className="w-[316px] mr-6">
-        <View className="h-[460px] w-full rounded-[32px] bg-white/5 overflow-hidden" />
-    </View>
+    <View 
+      style={{ width: FEATURED_CARD_WIDTH, height: 450 }} 
+      className="rounded-[32px] bg-white/5 overflow-hidden self-center" 
+    />
 );
 
 export const SkeletonTrending = () => (

@@ -11,7 +11,7 @@ interface Props {
 export default function FeaturedStoryCard({ story }: Props) {
   return (
     <Link href={`/story/${story.id}`} asChild>
-      <TouchableOpacity className="w-[300px] h-[400px] mr-4 rounded-3xl overflow-hidden relative">
+      <TouchableOpacity className="w-full h-[450px] rounded-[32px] overflow-hidden relative shadow-2xl shadow-black/50">
         <Image 
           source={story.coverImage} 
           className="w-full h-full"

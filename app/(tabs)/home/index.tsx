@@ -10,10 +10,12 @@ import {
   fetchTrendingStories,
   Story
 } from '../../../src/api/stories';
+import FeaturedCarousel from '../../../src/components/home/FeaturedCarousel';
 import FeaturedStoryCard from '../../../src/components/cards/FeaturedStoryCard';
 import StoryCard from '../../../src/components/cards/StoryCard';
 import TrendingStoryCard from '../../../src/components/cards/TrendingStoryCard';
 import { useAuth } from '../../../src/contexts/AuthContext';
+import { SkeletonFeatured } from '@/src/components/skeletons/CardSkeletons';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -101,7 +103,7 @@ export default function HomeScreen() {
         </View>
         <ScrollView className="flex-1 pt-6" showsVerticalScrollIndicator={false}>
            <View className="mb-10 px-6">
-               <View className="w-full h-[460px] bg-white/5 rounded-[32px] mb-4" />
+               <SkeletonFeatured />
            </View>
            <View className="mb-10 px-6 flex-row gap-3">
                {[1,2,3,4].map(i => <View key={i} className="w-20 h-8 bg-white/10 rounded-full" />)}
@@ -143,26 +145,7 @@ export default function HomeScreen() {
           
           {/* Hero Carousel */}
           <View className="mb-8">
-             <FlatList 
-                horizontal
-                data={featured}
-                renderItem={({ item }) => (
-                    <View style={{ width: Dimensions.get('window').width, paddingHorizontal: 24 }}>
-                        <FeaturedStoryCard story={item} />
-                    </View>
-                )}
-                keyExtractor={item => item.id}
-                showsHorizontalScrollIndicator={false}
-                pagingEnabled
-                snapToAlignment="center"
-                decelerationRate="fast"
-             />
-             {/* Pagination Dots */}
-             <View className="flex-row justify-center gap-2 mt-4">
-                 {featured.map((_, i) => (
-                    <View key={i} className={`w-1.5 h-1.5 rounded-full ${i===0 ? 'bg-primary w-4' : 'bg-white/20'}`} />
-                 ))}
-             </View>
+             <FeaturedCarousel data={featured} />
           </View>
 
           {/* Category Pills (Filter Style) */}
