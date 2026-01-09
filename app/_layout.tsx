@@ -1,3 +1,6 @@
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '../src/lib/react-query';
+
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -8,7 +11,8 @@ SystemUI.setBackgroundColorAsync('#0F0F1A');
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -23,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="story/reader" options={{ presentation: 'fullScreenModal', headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

@@ -1,211 +1,175 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../src/contexts/AuthContext';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../src/lib/supabase';
-
-interface Profile {
-  id: string;
-  username: string;
-  email: string;
-  avatar_url?: string;
-  balance: number;
-}
+import { useAuth } from '../src/contexts/AuthContext';
+import { useProfile, useUpdateProfile } from '../src/hooks/useProfile';
 
 export default function EditProfileScreen() {
-  const { user } = useAuth();
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const { session } = useAuth(); // Changed from 'user' to 'session' to match context export
+  const user = session?.user;
   
-  // Form fields
+  // React Query Hooks
+  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
+
+  // Local State for Form
   const [username, setUsername] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [tempAvatar, setTempAvatar] = useState<string | null>(null); // For immediate preview
 
-  // Fetch profile data
+  // Sync state with fetched data
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user?.id) return;
-      
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else if (data) {
-        console.log('Profile loaded:', data);
-        setProfile(data);
-        setUsername(data.username || '');
-        setAvatarUrl(data.avatar_url || null);
-        console.log('Avatar URL:', data.avatar_url);
-      }
-      setLoading(false);
+    if (profile) {
+      setUsername(profile.username || '');
     }
+  }, [profile]);
 
-    fetchProfile();
-  }, [user?.id]);
+  const handleSave = async () => {
+    if (!user) return;
+    
+    // Use the mutation hook
+    updateProfileMutation.mutate(
+      { username },
+      {
+        onSuccess: () => {
+          Alert.alert('Success', 'Profile updated successfully', [
+            { text: 'OK', onPress: () => router.back() }
+          ]);
+        },
+        onError: (error) => {
+          Alert.alert('Error', error.message);
+        }
+      }
+    );
+  };
 
   const pickImage = async () => {
     Alert.alert(
-      'Profile Photo',
-      'Choose an option',
+      "Update Profile Picture",
+      "Choose an option",
       [
-        {
-          text: 'Take Photo',
-          onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission Denied', 'Camera permission is required to take photos');
-              return;
-            }
-            launchCamera();
-          },
-        },
-        {
-          text: 'Choose from Library',
-          onPress: async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('Permission Denied', 'Gallery permission is required to choose photos');
-              return;
-            }
-            launchImageLibrary();
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Camera", onPress: launchCamera },
+        { text: "Gallery", onPress: launchImageLibrary },
+        { text: "Cancel", style: "cancel" }
       ]
     );
   };
 
   const launchCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Required", "Camera access is needed to take a photo.");
+      return;
+    }
+
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 1,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      await uploadImage(result.assets[0].uri);
+    if (!result.canceled) {
+      handleImageSelected(result.assets[0].uri);
     }
   };
 
   const launchImageLibrary = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Required", "Gallery access is needed to select a photo.");
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+       allowsEditing: true,
+       aspect: [1, 1],
+       quality: 1,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      await uploadImage(result.assets[0].uri);
+    if (!result.canceled) {
+      handleImageSelected(result.assets[0].uri);
     }
   };
 
-  const uploadImage = async (uri: string) => {
-    if (!user?.id) return;
+  const handleImageSelected = async (uri: string) => {
+    if (!user) return;
+    setUploading(true);
+    // Show immediate preview
+    setTempAvatar(uri);
 
     try {
-      setUploading(true);
-
-      // Compress image
-      const manipResult = await manipulateAsync(
+      // 1. Compress
+      const manipulated = await manipulateAsync(
         uri,
         [{ resize: { width: 800 } }],
         { compress: 0.8, format: SaveFormat.JPEG }
       );
+      
+      const fileUri = manipulated.uri;
+      const fileExt = fileUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
-      // Read file as base64
-      const response = await fetch(manipResult.uri);
-      const blob = await response.blob();
-      const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as ArrayBuffer);
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(blob);
-      });
+      // 2. Upload to Supabase Storage
+      const formData = new FormData();
+      formData.append('file', {
+        uri: fileUri,
+        name: fileName,
+        type: `image/${fileExt}`
+      } as any);
 
-      // Upload to Supabase Storage
-      const fileName = `${user.id}/${Date.now()}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, arrayBuffer, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        });
+        .upload(filePath, formData);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        Alert.alert('Upload Failed', `Supabase Storage Error: ${uploadError.message}`);
-        return;
-      }
+      if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // 3. Get Public URL
+      const { data } = supabase.storage
         .from('avatars')
-        .getPublicUrl(fileName);
-        
-      console.log('Generated Public URL:', publicUrl);
-      // Debug alert
-      Alert.alert('Debug', `Generated URL: ${publicUrl}`);
+        .getPublicUrl(filePath);
 
-      // Update profile in database
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
+      // 4. Update Profile via Mutation
+      updateProfileMutation.mutate(
+        { avatar_url: data.publicUrl },
+        {
+            onSuccess: () => {
+                setTempAvatar(null); // Clear temp, let real data take over
+                Alert.alert('Success', 'Profile photo updated!');
+            },
+            onError: (err) => {
+                setTempAvatar(null);
+                Alert.alert("Update Failed", err.message);
+            }
+        }
+      );
 
-      if (updateError) {
-        console.error('Update error:', updateError);
-        Alert.alert('Update Failed', `DB Update Error: ${updateError.message}`);
-        return;
-      }
-
-      // Update local state
-      setAvatarUrl(publicUrl);
-      Alert.alert('Success', 'Profile photo updated successfully!');
-
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Error', `Unexpected Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+    } catch (error: any) {
+      Alert.alert("Upload Failed", error.message);
+      setTempAvatar(null); // Revert on fail
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!user?.id) return;
-    
-    setSaving(true);
-    
-    // Only update username for now (bio field might not exist in database)
-    const { error } = await supabase
-      .from('profiles')
-      .update({ username })
-      .eq('id', user.id);
+  if (isProfileLoading) {
+     return (
+        <View className="flex-1 bg-dark-bg justify-center items-center">
+            <ActivityIndicator size="large" color="#FF2D55" />
+        </View>
+     );
+  }
 
-    if (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', `Failed to update profile: ${error.message}`);
-    } else {
-      Alert.alert('Success', 'Profile updated successfully', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
-    }
-    setSaving(false);
-  };
+  // Determine avatar to show: Temp (optimistic) > Saved Profile > Fallback Initials
+  const displayAvatar = tempAvatar || profile?.avatar_url;
 
   return (
     <SafeAreaView className="flex-1 bg-dark-bg" edges={['top']}>
@@ -219,11 +183,11 @@ export default function EditProfileScreen() {
         <Text className="text-white text-lg font-bold">Edit Profile</Text>
         <TouchableOpacity 
           onPress={handleSave} 
-          disabled={saving}
-          className="px-4 py-2 rounded-full bg-primary"
+          disabled={updateProfileMutation.isPending}
+          className={`px-4 py-2 rounded-full ${updateProfileMutation.isPending ? 'bg-gray-600' : 'bg-primary'}`}
         >
           <Text className="text-white font-bold text-sm">
-            {saving ? 'Saving...' : 'Save'}
+            {updateProfileMutation.isPending ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -234,14 +198,13 @@ export default function EditProfileScreen() {
         <View className="items-center mt-8 mb-8">
           <View className="relative">
             <View className="w-24 h-24 rounded-full bg-gray-700 border-4 border-dark-bg mb-4 overflow-hidden">
-              {avatarUrl ? (
+              {displayAvatar ? (
                 <Image
-                  source={{ uri: avatarUrl }}
+                  source={{ uri: displayAvatar }}
                   style={{ width: '100%', height: '100%' }}
                   contentFit="cover"
                   transition={200}
                   cachePolicy="memory-disk"
-                  key={avatarUrl}
                 />
               ) : (
                 <View className="w-full h-full bg-primary justify-center items-center">
