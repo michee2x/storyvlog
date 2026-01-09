@@ -83,7 +83,7 @@ export default function ReaderScreen() {
         primary: '#0a0a0a',
         secondary: '#0f0f0f',
         background: '#000000',
-        accent: '#1DB954',
+        accent: '#FF2D55',
     });
 
     const themeStyles = getThemeStyles(config.theme);

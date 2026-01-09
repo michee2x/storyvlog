@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { Story } from '../../api/stories';
 
 interface Props {
@@ -14,8 +15,9 @@ export default function StoryCard({ story }: Props) {
         <View className="w-44 h-64 rounded-2xl overflow-hidden shadow-lg bg-dark-card border border-white/10 mb-3">
           <Image
             source={story.coverImage}
-            className="w-full h-full"
-            resizeMode="cover"
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            transition={200}
           />
         </View>
         

@@ -25,7 +25,7 @@ const formatCount = (count: number): string => {
   return count.toString();
 };
 
-const mapStoryData = (data: any): Story => ({
+export const mapStoryData = (data: any): Story => ({
   ...data,
   // Map cover_url to coverImage for UI compatibility
   coverImage: data.cover_url ? { uri: data.cover_url } : require('@/assets/images/romance-cover.png'),

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { Alert, ScrollView, StatusBar, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { supabase } from '../../../src/lib/supabase';
@@ -38,30 +39,31 @@ export default function ProfileScreen() {
     );
   };
 
-  // Fetch profile data
-  useEffect(() => {
-    async function fetchProfile() {
-      if (!user?.id) return;
-      
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+  // Fetch profile data on focus
+  useFocusEffect(
+    useCallback(() => {
+      async function fetchProfile() {
+        if (!user?.id) return;
+        
+        // Don't show loading spinner on refetch to keep UI stable
+        // setLoading(true); 
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
+        if (error) {
+          console.error('Error fetching profile:', error);
+        } else {
+          setProfile(data);
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    }
 
-    fetchProfile();
-  }, [user?.id]);
-
-  const [isDarkMode, setIsDarkMode] = useState(true);
+      fetchProfile();
+    }, [user?.id])
+  );
 
   const StatItem = ({ label, value }: { label: string, value: string }) => (
     <View className="items-center flex-1">
@@ -89,12 +91,21 @@ export default function ProfileScreen() {
         <View className="items-center mt-8 mb-8">
             <View className="relative">
                 <View className="w-24 h-24 rounded-full bg-gray-700 border-4 border-dark-bg mb-4 overflow-hidden">
-                    {/* Placeholder for avatar */}
-                    <View className="w-full h-full bg-primary justify-center items-center">
-                        <Text className="text-4xl text-white font-bold">
-                          {profile?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                        </Text>
-                    </View>
+                    {profile?.avatar_url ? (
+                      <Image
+                        source={{ uri: profile.avatar_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        contentFit="cover"
+                        transition={200}
+                        cachePolicy="memory-disk"
+                      />
+                    ) : (
+                      <View className="w-full h-full bg-primary justify-center items-center">
+                          <Text className="text-4xl text-white font-bold">
+                            {profile?.username?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+                          </Text>
+                      </View>
+                    )}
                 </View>
                 <View className="absolute bottom-4 right-0 bg-white p-1.5 rounded-full border-2 border-dark-bg">
                     <Ionicons name="camera" size={12} color="black" />
@@ -119,35 +130,23 @@ export default function ProfileScreen() {
         <View className="px-6 mb-8">
             <Text className="text-gray-500 text-xs font-bold uppercase mb-3 ml-2">Account</Text>
             <View>
-                <MenuItem icon="person-outline" label="Edit Profile" />
+                <MenuItem icon="person-outline" label="Edit Profile" onPress={() => router.push('/edit-profile')} />
                 <MenuItem icon="notifications-outline" label="Notifications" />
-                <MenuItem icon="shield-checkmark-outline" label="Privacy & Security" />
+                <MenuItem 
+                  icon="shield-checkmark-outline" 
+                  label="Privacy & Security" 
+                  onPress={() => router.push('/privacy-policy')}
+                />
             </View>
         </View>
 
         {/* Menu Group 2 */}
-        <View className="px-6 mb-8">
-            <Text className="text-gray-500 text-xs font-bold uppercase mb-3 ml-2">Preferences</Text>
-             <View className="bg-dark-card rounded-2xl p-4 flex-row items-center justify-between border border-white/5 mb-3">
-                <View className="flex-row items-center">
-                    <View className="w-8 h-8 rounded-full bg-white/5 justify-center items-center mr-4">
-                        <Ionicons name="moon-outline" size={16} color="white" />
-                    </View>
-                    <Text className="text-white font-semibold text-base">Dark Mode</Text>
-                </View>
-                <Switch 
-                    value={isDarkMode} 
-                    onValueChange={setIsDarkMode}
-                    trackColor={{ false: "#767577", true: "#FF2D55" }}
-                    thumbColor={"#f4f3f4"}
-                />
-            </View>
-            <MenuItem icon="language-outline" label="Language" />
-        </View>
-
-        {/* Menu Group 3 */}
         <View className="px-6">
-            <MenuItem icon="help-buoy-outline" label="Help & Support" />
+            <MenuItem 
+              icon="help-buoy-outline" 
+              label="Help & Support" 
+              onPress={() => router.push('/help-support')}
+            />
             <MenuItem icon="log-out-outline" label="Log Out" isDestructive onPress={handleLogout} />
         </View>
 
