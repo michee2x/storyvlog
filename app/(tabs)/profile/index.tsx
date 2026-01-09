@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../src/contexts/AuthContext';
 import { useProfile } from '../../../src/hooks/useProfile';
+import { useUnreadNotificationCount } from '@/src/hooks/useNotifications';
 
 export default function ProfileScreen() {
   const router = useRouter(); 
@@ -12,6 +13,7 @@ export default function ProfileScreen() {
   
   // React Query Hook - Automatically handles caching & background refetch
   const { data: profile, isLoading } = useProfile();
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   const handleSignOut = async () => {
     await signOut();
@@ -109,6 +111,11 @@ export default function ProfileScreen() {
                     <Text className="text-white text-base font-medium flex-1">
                         {item.label}
                     </Text>
+                    {item.route === '/notifications' && (unreadCount ?? 0) > 0 && (
+                        <View className="bg-red-500 rounded-full w-5 h-5 justify-center items-center mr-2">
+                            <Text className="text-white text-xs font-bold">{unreadCount}</Text>
+                        </View>
+                    )}
                     <Ionicons name="chevron-forward" size={20} color="#666" />
                 </TouchableOpacity>
             ))}
